@@ -1,0 +1,13 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	fmt.Println("This BlogString")
+
+	server := gin.Default()
+}
