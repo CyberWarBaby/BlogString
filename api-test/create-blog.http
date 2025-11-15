@@ -1,0 +1,7 @@
+POST http://localhost:8080/blogs
+content-type: application/json
+
+{
+    "title": "test eventt 45",
+    "content": "another test event"
+}
