@@ -1,5 +1,4 @@
-GET http://localhost:8080/blogs
-
+GET http://localhost:8080/blogs/2
 
 # POST http://localhost:8080/blogs
 # content-type: application/json

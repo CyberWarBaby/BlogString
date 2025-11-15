@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strconv"
 
 	"example.com/blog-api/models"
 	"github.com/gin-gonic/gin"
@@ -49,4 +50,20 @@ func createBlogs(context *gin.Context) {
 		"message": "successfully created blog",
 		"blog":    blog,
 	})
+}
+
+func getBlog(context *gin.Context) {
+	blogId, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse blog id."})
+		return
+	}
+
+	blog, err := models.GetBlogById(blogId)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch blog"})
+		return
+	}
+
+	context.JSON(http.StatusOK, blog)
 }

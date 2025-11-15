@@ -85,3 +85,46 @@ func GetAllBlogs() ([]Blog, error) {
 
 	return blogs, nil
 }
+
+// func GetBlogById(id int64) (*Blog, error) {
+// 	query := "SELECT id, title, content, author_id, created_at, updated_at FROM blogs WHERE id = ?"
+
+// 	row := db.DB.QueryRow(query, id)
+// 	var blog Blog
+
+// 	if err := row.Scan(&blog.ID, &blog.Title, &blog.Content, &blog.AuthorID, &blog.CreatedAt, &blog.UpdatedAt); err != nil {
+// 		return nil, err
+// 	}
+// 	return &blog, nil
+
+// }
+
+func GetBlogById(id int64) (*Blog, error) {
+	query := "SELECT id, title, content, author_id, created_at, updated_at FROM blogs WHERE id = ?"
+	row := db.DB.QueryRow(query, id)
+
+	var blog Blog
+	var authorID sql.NullInt64
+	var createdAtStr, updatedAtStr string
+
+	// scan safely
+	if err := row.Scan(&blog.ID, &blog.Title, &blog.Content, &authorID, &createdAtStr, &updatedAtStr); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // no blog found
+		}
+		return nil, err
+	}
+
+	// handle possible NULL author_id
+	if authorID.Valid {
+		blog.AuthorID = authorID.Int64
+	} else {
+		blog.AuthorID = 0 // default
+	}
+
+	// parse timestamps from sqlite strings
+	blog.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+	blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
+	return &blog, nil
+}
