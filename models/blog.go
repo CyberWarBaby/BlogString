@@ -1,22 +1,58 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 
 	"example.com/blog-api/db"
 )
 
 type Blog struct {
-	ID        int64     `json:"id"`
+	ID        int64
 	Title     string    `json:"title" binding:"required"`
 	Content   string    `json:"content" binding:"required"`
-	AuthorID  int64     `json:"author_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	AuthorID  int64
+}
+
+func (b *Blog) Save() error {
+
+	b.AuthorID = 1
+
+	query := `INSERT INTO blogs (title, content, author_id) VALUES (?, ?, ?)`
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	result, err := stmt.Exec(b.Title, b.Content, b.AuthorID)
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	b.ID = id
+
+	row := db.DB.QueryRow("SELECT created_at, updated_at FROM blogs WHERE id = ?", b.ID)
+	var createdAt, updatedAt string
+	if err := row.Scan(&createdAt, &updatedAt); err != nil {
+		return err
+	}
+
+	b.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+	b.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+
+	return nil
 }
 
 func GetAllBlogs() ([]Blog, error) {
-	query := "SELECT * FROM blogs"
+	query := "SELECT id, title, content, author_id, created_at, updated_at FROM blogs"
 	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -27,12 +63,25 @@ func GetAllBlogs() ([]Blog, error) {
 
 	for rows.Next() {
 		var blog Blog
-		err := rows.Scan(&blog.ID, &blog.Title, &blog.Content, &blog.AuthorID, &blog.CreatedAt, &blog.UpdatedAt)
+		var authorID sql.NullInt64 // <-- handle possible NULL
+		var createdAtStr, updatedAtStr string
 
+		err := rows.Scan(&blog.ID, &blog.Title, &blog.Content, &authorID, &createdAtStr, &updatedAtStr)
 		if err != nil {
 			return nil, err
 		}
+
+		if authorID.Valid {
+			blog.AuthorID = authorID.Int64
+		} else {
+			blog.AuthorID = 0 // default for NULL
+		}
+
+		blog.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
 		blogs = append(blogs, blog)
 	}
+
 	return blogs, nil
 }
