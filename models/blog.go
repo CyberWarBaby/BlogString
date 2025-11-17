@@ -19,18 +19,30 @@ type Blog struct {
 }
 
 func (b *Blog) Save() error {
-
 	b.AuthorID = 1
 	b.Slug = utils.GenSlug(b.Title)
-	query := `INSERT INTO blogs (title, content, author_id, slug) VALUES (?, ?, ?, ?)`
+	b.CreatedAt = time.Now()
+	b.UpdatedAt = b.CreatedAt
+
+	query := `
+		INSERT INTO blogs (title, content, author_id, slug, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
 	stmt, err := db.DB.Prepare(query)
 	if err != nil {
 		return err
 	}
-
 	defer stmt.Close()
 
-	result, err := stmt.Exec(b.Title, b.Content, b.AuthorID, b.Slug)
+	result, err := stmt.Exec(
+		b.Title,
+		b.Content,
+		b.AuthorID,
+		b.Slug,
+		b.CreatedAt.Format("2006-01-02 15:04:05"),
+		b.UpdatedAt.Format("2006-01-02 15:04:05"),
+	)
 	if err != nil {
 		return err
 	}
@@ -41,15 +53,7 @@ func (b *Blog) Save() error {
 	}
 	b.ID = id
 
-	row := db.DB.QueryRow("SELECT created_at, updated_at FROM blogs WHERE id = ?", b.ID)
-	var createdAt, updatedAt string
-	if err := row.Scan(&createdAt, &updatedAt); err != nil {
-		return err
-	}
-
-	b.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	b.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
+	// now you can scan, but it's optional because you already have the timestamps in struct
 	return nil
 }
 
@@ -66,9 +70,9 @@ func GetAllBlogs() ([]Blog, error) {
 	for rows.Next() {
 		var blog Blog
 		var authorID sql.NullInt64 // <-- handle possible NULL
-		var createdAtStr, updatedAtStr string
+		// var createdAtStr, updatedAtStr time.Time
 
-		err := rows.Scan(&blog.ID, &blog.Title, &blog.Slug, &blog.Content, &authorID, &createdAtStr, &updatedAtStr)
+		err := rows.Scan(&blog.ID, &blog.Title, &blog.Slug, &blog.Content, &authorID, &blog.CreatedAt, &blog.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -79,8 +83,8 @@ func GetAllBlogs() ([]Blog, error) {
 			blog.AuthorID = 0 // default for NULL
 		}
 
-		blog.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-		blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+		// blog.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
+		// blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
 
 		blogs = append(blogs, blog)
 	}
@@ -107,10 +111,9 @@ func GetBlogById(id int64) (*Blog, error) {
 
 	var blog Blog
 	var authorID sql.NullInt64
-	var createdAtStr, updatedAtStr string
 
 	// scan safely
-	if err := row.Scan(&blog.ID, &blog.Title, &blog.Content, &authorID, &createdAtStr, &updatedAtStr); err != nil {
+	if err := row.Scan(&blog.ID, &blog.Title, &blog.Content, &authorID, &blog.CreatedAt, &blog.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // no blog found
 		}
@@ -124,9 +127,29 @@ func GetBlogById(id int64) (*Blog, error) {
 		blog.AuthorID = 0 // default
 	}
 
-	// parse timestamps from sqlite strings
-	blog.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr)
-	blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
-
 	return &blog, nil
+}
+
+func (blog Blog) Update() error {
+	query := `
+	UPDATE blogs
+	SET title = ?, slug=?, content=?, updated_at=? 
+	WHERE id = ?`
+
+	// blog.UpdatedAt = time.Now()
+	updatedTimeinit := time.Now()
+	newTime := updatedTimeinit.Format("2006-01-02 15:04:05")
+
+	// blog.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAtStr)
+
+	blog.Slug = utils.GenSlug(blog.Title)
+
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(blog.Title, blog.Slug, blog.Content, newTime, blog.ID)
+	return err
 }

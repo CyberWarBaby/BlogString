@@ -67,3 +67,36 @@ func getBlog(context *gin.Context) {
 
 	context.JSON(http.StatusOK, blog)
 }
+func updateBLog(context *gin.Context) {
+	blogId, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not fetch events. Try again later"})
+		return
+	}
+
+	// blog, err := models.GetBlogById(blogId)
+
+	// if err != nil {
+	// 	context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch the event"})
+	// 	return
+	// }
+
+	var updatedBLog models.Blog
+
+	err = context.ShouldBindJSON(&updatedBLog)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "could not parse req data"})
+		return
+	}
+
+	updatedBLog.ID = blogId
+	// updatedBLog.Slug=
+
+	err = updatedBLog.Update()
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not update the blog"})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"message": "Blog updated successfully"})
+
+}

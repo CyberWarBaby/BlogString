@@ -1,7 +1,7 @@
-POST http://localhost:8080/blogs
+PUT http://localhost:8080/blogs/1
 content-type: application/json
 
 {
-    "title": "building a cloud-native ai mesh with go part ni",
+    "title": "building a cloud-native ai mesh with go part edited",
     "content": "in this third article, i break down how a small go service can evolve into a full distributed ai mesh. from lightweight grpc gateways to intelligent node coordination, this mock post explores what a future-proof infrastructure layer could look like. it’s only a demo post, so don’t take anything here as real architecture—just sample data to hit your endpoints."
 }
