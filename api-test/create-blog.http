@@ -2,6 +2,6 @@ POST http://localhost:8080/blogs
 content-type: application/json
 
 {
-    "title": "test eventt 45",
-    "content": "another test event"
+    "title": "building a cloud-native ai mesh with go",
+    "content": "in this article, i break down how a small go service can evolve into a full distributed ai mesh. from lightweight grpc gateways to intelligent node coordination, this mock post explores what a future-proof infrastructure layer could look like. it’s only a demo post, so don’t take anything here as real architecture—just sample data to hit your endpoints."
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"example.com/blog-api/db"
+	"example.com/blog-api/utils"
 )
 
 type Blog struct {
@@ -14,13 +15,14 @@ type Blog struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	AuthorID  int64
+	Slug      string
 }
 
 func (b *Blog) Save() error {
 
 	b.AuthorID = 1
-
-	query := `INSERT INTO blogs (title, content, author_id) VALUES (?, ?, ?)`
+	b.Slug = utils.GenSlug(b.Title)
+	query := `INSERT INTO blogs (title, content, author_id, slug) VALUES (?, ?, ?, ?)`
 	stmt, err := db.DB.Prepare(query)
 	if err != nil {
 		return err
@@ -28,7 +30,7 @@ func (b *Blog) Save() error {
 
 	defer stmt.Close()
 
-	result, err := stmt.Exec(b.Title, b.Content, b.AuthorID)
+	result, err := stmt.Exec(b.Title, b.Content, b.AuthorID, b.Slug)
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,7 @@ func (b *Blog) Save() error {
 }
 
 func GetAllBlogs() ([]Blog, error) {
-	query := "SELECT id, title, content, author_id, created_at, updated_at FROM blogs"
+	query := "SELECT id, title, slug, content, author_id, created_at, updated_at FROM blogs"
 	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, err
@@ -66,7 +68,7 @@ func GetAllBlogs() ([]Blog, error) {
 		var authorID sql.NullInt64 // <-- handle possible NULL
 		var createdAtStr, updatedAtStr string
 
-		err := rows.Scan(&blog.ID, &blog.Title, &blog.Content, &authorID, &createdAtStr, &updatedAtStr)
+		err := rows.Scan(&blog.ID, &blog.Title, &blog.Slug, &blog.Content, &authorID, &createdAtStr, &updatedAtStr)
 		if err != nil {
 			return nil, err
 		}
