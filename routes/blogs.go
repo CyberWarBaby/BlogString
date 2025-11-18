@@ -100,3 +100,23 @@ func updateBLog(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "Blog updated successfully"})
 
 }
+
+func deleteBlog(context *gin.Context) {
+	blogId, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch events, try again later"})
+		return
+	}
+	blog, err := models.GetBlogById(blogId)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch blog"})
+		return
+	}
+
+	err = blog.Delete()
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not delete the blog"})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"message": "Blog deleted successfully"})
+}

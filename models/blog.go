@@ -153,3 +153,18 @@ func (blog Blog) Update() error {
 	_, err = stmt.Exec(blog.Title, blog.Slug, blog.Content, newTime, blog.ID)
 	return err
 }
+
+func (blog Blog) Delete() error {
+	query := `
+        DELETE FROM blogs WHERE id = ?;
+    `
+
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(blog.ID)
+	return err
+}
