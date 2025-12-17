@@ -67,7 +67,7 @@ func getBlog(context *gin.Context) {
 
 	context.JSON(http.StatusOK, blog)
 }
-func updateBLog(context *gin.Context) {
+func updateBlog(context *gin.Context) {
 	blogId, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not fetch events. Try again later"})
